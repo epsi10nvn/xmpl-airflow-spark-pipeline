@@ -1,0 +1,84 @@
+# docker-compose.override.yml
+version: "3.1"
+
+services:
+  spark-master:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_MASTER_WEBUI_PORT=8081
+    ports:
+      - "8081:8081"
+      - "7077:7077"
+    volumes:
+      - spark-data:/bitnami
+      - ./include:/usr/local/airflow/include
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+    networks:
+      - airflow
+
+  spark-worker:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      - ./include:/usr/local/airflow/include
+      - spark-data:/bitnami
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+    depends_on:
+      - spark-master
+    networks:
+      - airflow
+
+  mongo:
+    image: mongo:5
+    labels:
+      breeze.description: "Integration required for MongoDB hooks."
+    volumes:
+      - mongo-db-volume:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: "on-failure"
+    networks:
+      - airflow
+    command: mongod --bind_ip 0.0.0.0
+
+  # try to track celery
+
+  # flower:
+  #   image: mher/flower:latest
+  #   command: ["python", "-m", "flower", "--broker=redis://redis:6379/0"]
+  #   ports:
+  #     - "5555:5555"
+  #   depends_on:
+  #     # - redis
+  #   networks:
+  #     - airflow
+
+  # redis:
+  #   image: redis:alpine
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - airflow
+volumes:
+  spark-data:
+  mongo-db-volume:
