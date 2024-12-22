@@ -85,8 +85,8 @@ This workflow runs locally using **Astro CLI** and **Docker** to manage the serv
    Clone this repository to your local machine:
 
    ```bash
-   git clone <repository_url>
-   cd <repository_folder>
+   git clone https://github.com/epsi10nvn/xmpl-airflow-spark-pipeline.git
+   cd xmpl-airflow-spark-pipeline
    ```
 
 2. **Start the environment**  
